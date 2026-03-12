@@ -1,7 +1,10 @@
 //// ResultOption utilities for Rectify
 ////
-//// Helpers for working with `Result(Option(a), e)` - a common pattern
+//// Helpers for working with `Result(Option(a), e)` — a common pattern
 //// for operations that can fail AND may not return a value.
+////
+//// We refer to this as "ResultOption" for brevity, but it's not a
+//// distinct type — just the composed `Result(Option(a), e)` pattern.
 ////
 //// Instead of nested pattern matching, use these combinators.
 
@@ -11,7 +14,7 @@ import gleam/option.{type Option, None, Some}
 // Constructors
 // ==========================================
 
-/// Create a Result containing Some value.
+/// Create a `Result` containing `Some` value.
 ///
 /// ## Examples
 ///
@@ -23,7 +26,7 @@ pub fn some(a: a) -> Result(Option(a), e) {
   Ok(Some(a))
 }
 
-/// Create a Result containing None.
+/// Create a `Result` containing `None`.
 ///
 /// ## Examples
 ///
@@ -35,7 +38,7 @@ pub fn none() -> Result(Option(a), e) {
   Ok(None)
 }
 
-/// Create an error Result.
+/// Create an error `Result`.
 ///
 /// ## Examples
 ///
@@ -51,7 +54,7 @@ pub fn error(e: e) -> Result(Option(a), e) {
 // Mapping
 // ==========================================
 
-/// Map over the value inside Result<Option>, if both succeed.
+/// Map over the value inside ResultOption, if both succeed.
 ///
 /// ## Examples
 ///
@@ -77,7 +80,7 @@ pub fn map(ro: Result(Option(a), e), f: fn(a) -> b) -> Result(Option(b), e) {
   }
 }
 
-/// Bind over Result<Option>.
+/// Bind over ResultOption.
 ///
 /// ## Examples
 ///
@@ -105,7 +108,7 @@ pub fn bind(
 // Conversions
 // ==========================================
 
-/// Convert Result<Option> to Option, losing error information.
+/// Convert ResultOption to `Option(a)`, losing error information.
 ///
 /// ## Examples
 ///
@@ -126,12 +129,11 @@ pub fn bind(
 pub fn to_option(ro: Result(Option(a), e)) -> Option(a) {
   case ro {
     Ok(Some(a)) -> Some(a)
-    Ok(None) -> None
-    Error(_) -> None
+    Ok(None) | Error(_) -> None
   }
 }
 
-/// Convert Option to Result<Option>, wrapping in Ok.
+/// Convert `Option` to ResultOption, wrapping in `Ok`.
 ///
 /// ## Examples
 ///
@@ -148,7 +150,7 @@ pub fn of_option(opt: Option(a)) -> Result(Option(a), e) {
   Ok(opt)
 }
 
-/// Convert Result to Result<Option>, wrapping success in Some.
+/// Convert Result to ResultOption, wrapping success in `Some`.
 ///
 /// ## Examples
 ///
@@ -168,7 +170,7 @@ pub fn of_result(result: Result(a, e)) -> Result(Option(a), e) {
   }
 }
 
-/// Convert Result<Option> to a plain Result, with a default for None.
+/// Convert ResultOption to a plain `Result`, with a default for `None`.
 ///
 /// ## Examples
 ///
@@ -198,7 +200,7 @@ pub fn to_result(ro: Result(Option(a), e), default: a) -> Result(a, e) {
 // Predicates
 // ==========================================
 
-/// Check if Result<Option> contains Some value.
+/// Check if ResultOption contains `Some` value.
 ///
 /// ## Examples
 ///
@@ -223,7 +225,7 @@ pub fn is_some(ro: Result(Option(a), e)) -> Bool {
   }
 }
 
-/// Check if Result<Option> contains None.
+/// Check if ResultOption contains `None`.
 ///
 /// ## Examples
 ///
@@ -248,49 +250,30 @@ pub fn is_none(ro: Result(Option(a), e)) -> Bool {
   }
 }
 
-/// Check if Result<Option> is an Error.
-///
-/// ## Examples
-///
-/// ```gleam
-/// is_error(Error("e"))
-/// // -> True
-/// ```
-///
-/// ```gleam
-/// is_error(Ok(Some(42)))
-/// // -> False
-/// ```
-pub fn is_error(ro: Result(Option(a), e)) -> Bool {
-  case ro {
-    Error(_) -> True
-    _ -> False
-  }
-}
-
 // ==========================================
 // Defaults
 // ==========================================
 
-/// Get value or return default.
+/// Unwrap the `Option` inside `Result`, using a default for `None`.
+/// Returns the value if `Some`, the default if `None`, or preserves `Error`.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// default_to(Ok(Some(42)), 0)
+/// unwrap_option(Ok(Some(42)), 0)
 /// // -> Ok(42)
 /// ```
 ///
 /// ```gleam
-/// default_to(Ok(None), 0)
+/// unwrap_option(Ok(None), 0)
 /// // -> Ok(0)
 /// ```
 ///
 /// ```gleam
-/// default_to(Error("e"), 0)
+/// unwrap_option(Error("e"), 0)
 /// // -> Error("e")
 /// ```
-pub fn default_to(ro: Result(Option(a), e), default: a) -> Result(a, e) {
+pub fn unwrap_option(ro: Result(Option(a), e), default: a) -> Result(a, e) {
   case ro {
     Ok(Some(a)) -> Ok(a)
     Ok(None) -> Ok(default)
@@ -298,25 +281,29 @@ pub fn default_to(ro: Result(Option(a), e), default: a) -> Result(a, e) {
   }
 }
 
-/// Get value or compute default for None cases.
+/// Unwrap the `Option` inside `Result`, computing a default lazily for `None`.
+/// Returns the value if `Some`, computes `default` if `None`, or preserves `Error`.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// default_with(Ok(Some(42)), fn() { 0 })
+/// unwrap_option_lazy(Ok(Some(42)), fn() { 0 })
 /// // -> Ok(42)
 /// ```
 ///
 /// ```gleam
-/// default_with(Ok(None), fn() { 100 })
+/// unwrap_option_lazy(Ok(None), fn() { 100 })
 /// // -> Ok(100)
 /// ```
 ///
 /// ```gleam
-/// default_with(Error("e"), fn() { 0 })
+/// unwrap_option_lazy(Error("e"), fn() { 0 })
 /// // -> Error("e")
 /// ```
-pub fn default_with(ro: Result(Option(a), e), f: fn() -> a) -> Result(a, e) {
+pub fn unwrap_option_lazy(
+  ro: Result(Option(a), e),
+  f: fn() -> a,
+) -> Result(a, e) {
   case ro {
     Ok(Some(a)) -> Ok(a)
     Ok(None) -> Ok(f())

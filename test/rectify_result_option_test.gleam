@@ -123,39 +123,28 @@ pub fn is_none_test() {
   |> should.be_false
 }
 
-pub fn is_error_test() {
-  ro.is_error(Error("e"))
-  |> should.be_true
-
-  ro.is_error(Ok(Some(42)))
-  |> should.be_false
-
-  ro.is_error(Ok(None))
-  |> should.be_false
-}
-
 // ==========================================
 // Defaults
 // ==========================================
 
-pub fn default_to_test() {
-  ro.default_to(Ok(Some(42)), 0)
+pub fn unwrap_option_test() {
+  ro.unwrap_option(Ok(Some(42)), 0)
   |> should.equal(Ok(42))
 
-  ro.default_to(Ok(None), 0)
+  ro.unwrap_option(Ok(None), 0)
   |> should.equal(Ok(0))
 
-  ro.default_to(Error("e"), 0)
+  ro.unwrap_option(Error("e"), 0)
   |> should.equal(Error("e"))
 }
 
-pub fn default_with_test() {
-  ro.default_with(Ok(Some(42)), fn() { 0 })
+pub fn unwrap_option_lazy_test() {
+  ro.unwrap_option_lazy(Ok(Some(42)), fn() { 0 })
   |> should.equal(Ok(42))
 
-  ro.default_with(Ok(None), fn() { 100 })
+  ro.unwrap_option_lazy(Ok(None), fn() { 100 })
   |> should.equal(Ok(100))
 
-  ro.default_with(Error("e"), fn() { 0 })
+  ro.unwrap_option_lazy(Error("e"), fn() { 0 })
   |> should.equal(Error("e"))
 }
