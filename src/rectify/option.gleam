@@ -7,47 +7,6 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 
 // ==========================================
-// Predicates
-// ==========================================
-
-/// Check if an option is Some.
-///
-/// ## Examples
-///
-/// ```gleam
-/// is_some(Some(42))
-/// // -> True
-/// ```
-///
-/// ```gleam
-/// is_some(None)
-/// // -> False
-/// ```
-pub fn is_some(opt: Option(a)) -> Bool {
-  case opt {
-    Some(_) -> True
-    None -> False
-  }
-}
-
-/// Check if an option is None.
-///
-/// ## Examples
-///
-/// ```gleam
-/// is_none(None)
-/// // -> True
-/// ```
-///
-/// ```gleam
-/// is_none(Some(42))
-/// // -> False
-/// ```
-pub fn is_none(opt: Option(a)) -> Bool {
-  !is_some(opt)
-}
-
-// ==========================================
 // Defaults
 // ==========================================
 

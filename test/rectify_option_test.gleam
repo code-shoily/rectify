@@ -8,26 +8,6 @@ pub fn main() {
 }
 
 // ==========================================
-// Predicates
-// ==========================================
-
-pub fn is_some_test() {
-  ropt.is_some(Some(42))
-  |> should.be_true
-
-  ropt.is_some(None)
-  |> should.be_false
-}
-
-pub fn is_none_test() {
-  ropt.is_none(None)
-  |> should.be_true
-
-  ropt.is_none(Some(42))
-  |> should.be_false
-}
-
-// ==========================================
 // Defaults
 // ==========================================
 
