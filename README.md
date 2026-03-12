@@ -110,18 +110,12 @@ Additional helpers for Gleam's `Option` type.
 ```gleam
 import rectify/option as ropt
 
-// Predicates
-ropt.is_some(Some(42))    // True
-ropt.is_none(None)        // True
-
 // Defaults
-ropt.default_to(Some(42), 0)     // 42
-ropt.default_to(None, 0)         // 0
-ropt.default_with(None, fn() { expensive() })
+ropt.unwrap_lazy(None, fn() { expensive() })  // Lazily compute default
 
 // Combining
 ropt.map2(Some(2), Some(3), fn(a, b) { a + b })  // Some(5)
-ropt.map3(opt1, opt2, opt3, fn(a, b, c) { a + b + c })
+ropt.map3(opt1, opt2, opt3, fn(a, b, c) { a + b + c })  // Up to map5 available
 
 // Collections
 ropt.choose_somes([Some(1), None, Some(2)])  // [1, 2]

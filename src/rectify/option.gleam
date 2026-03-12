@@ -10,40 +10,22 @@ import gleam/option.{type Option, None, Some}
 // Defaults
 // ==========================================
 
-/// Get the value from an option or return a default.
+/// Get the value from an option or compute a default lazily.
+/// Great when generating defaults lazily or when the value is
+/// expensive to compute.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// default_to(Some(42), 0)
+/// unwrap_lazy(Some(42), fn() { 0 })
 /// // -> 42
 /// ```
 ///
 /// ```gleam
-/// default_to(None, 0)
-/// // -> 0
-/// ```
-pub fn default_to(opt: Option(a), default: a) -> a {
-  case opt {
-    Some(a) -> a
-    None -> default
-  }
-}
-
-/// Get the value from an option or compute a default.
-///
-/// ## Examples
-///
-/// ```gleam
-/// default_with(Some(42), fn() { 0 })
-/// // -> 42
-/// ```
-///
-/// ```gleam
-/// default_with(None, fn() { expensive_computation() })
+/// unwrap_lazy(None, fn() { expensive_computation() })
 /// // -> result of expensive_computation()
 /// ```
-pub fn default_with(opt: Option(a), f: fn() -> a) -> a {
+pub fn unwrap_lazy(opt: Option(a), f: fn() -> a) -> a {
   case opt {
     Some(a) -> a
     None -> f()
@@ -165,12 +147,7 @@ pub fn map5(
 /// // -> [1, 2, 3]
 /// ```
 pub fn choose_somes(opts: List(Option(a))) -> List(a) {
-  list.filter_map(opts, fn(opt) {
-    case opt {
-      Some(a) -> Ok(a)
-      None -> Error(Nil)
-    }
-  })
+  list.filter_map(opts, to_result(_, Nil))
 }
 
 /// Returns the first Some value, or None if all are None.
@@ -219,6 +196,7 @@ pub fn to_result(opt: Option(a), error: e) -> Result(a, e) {
 }
 
 /// Convert a Result to an Option, discarding the error.
+/// `Ok(value)` becomes `Some(value)`, `Error(error)` becomes `None`.
 ///
 /// ## Examples
 ///

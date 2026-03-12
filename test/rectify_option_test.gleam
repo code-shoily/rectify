@@ -11,19 +11,11 @@ pub fn main() {
 // Defaults
 // ==========================================
 
-pub fn default_to_test() {
-  ropt.default_to(Some(42), 0)
+pub fn unwrap_lazy_test() {
+  ropt.unwrap_lazy(Some(42), fn() { 0 })
   |> should.equal(42)
 
-  ropt.default_to(None, 0)
-  |> should.equal(0)
-}
-
-pub fn default_with_test() {
-  ropt.default_with(Some(42), fn() { 0 })
-  |> should.equal(42)
-
-  ropt.default_with(None, fn() { 100 })
+  ropt.unwrap_lazy(None, fn() { 100 })
   |> should.equal(100)
 }
 

@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **rectify/option** - Removed `is_some/1` and `is_none/1`
   - These were duplicates of `gleam/option.is_some/1` and `gleam/option.is_none/1`, use those instead.
 
+- **rectify/option** - Removed `default_to/2`
+  - Use `gleam/option.unwrap/2` instead (identical functionality).
+
+- **rectify/option** - Renamed `default_with/2` to `unwrap_lazy/2`
+  - Better conveys the lazy evaluation semantics and mirrors `unwrap` naming.
+
 ## [1.0.0] - 2026-03-10
 
 ### Added
