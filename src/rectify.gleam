@@ -96,9 +96,13 @@ pub fn map3(
   v1: Validation(a, e),
   v2: Validation(b, e),
   v3: Validation(c, e),
-  f: fn(a, b, c) -> d,
+  combiner: fn(a, b, c) -> d,
 ) -> Validation(d, e) {
-  map2(map2(v1, v2, fn(a, b) { fn(c) { f(a, b, c) } }), v3, fn(f_, c) { f_(c) })
+  {
+    use a, b <- map2(v1, v2)
+    combiner(a, b, _)
+  }
+  |> apply(v3)
 }
 
 /// Map over four validations.
@@ -112,15 +116,48 @@ pub fn map4(
   v4: Validation(d, e),
   f: fn(a, b, c, d) -> g,
 ) -> Validation(g, e) {
-  map2(map3(v1, v2, v3, fn(a, b, c) { fn(d) { f(a, b, c, d) } }), v4, fn(f_, d) {
-    f_(d)
-  })
+  {
+    use a, b, c <- map3(v1, v2, v3)
+    f(a, b, c, _)
+  }
+  |> apply(v4)
 }
 
 /// Map over five validations.
 ///
 /// Similar to `map2`, but for five validations. Gathers all errors if any
 /// of the validations are invalid.
+///
+/// ## Why Stop at 5?
+///
+/// Following Miller's Law (7±2 items in working memory), we cap at 5 for
+/// cognitive ergonomics. Need more? Compose validations hierarchically.
+/// With just 3 levels of nesting, you can handle 125 fields (5³).
+///
+/// ## Examples
+///
+/// For larger arities, compose with nested maps:
+///
+/// ```gleam
+/// // A type with 9 fields
+/// type LargeForm {
+///   LargeForm(
+///     a: String, b: String, c: String,
+///     d: String, e: String, f: String,
+///     g: String, h: String, i: String,
+///   )
+/// }
+///
+/// // Group into 3 sub-records, validate each group
+/// let group1 = map3(va, vb, vc, SubRecord1)
+/// let group2 = map3(vd, ve, vf, SubRecord2)
+/// let group3 = map3(vg, vh, vi, SubRecord3)
+///
+/// // Combine the groups
+/// map3(group1, group2, group3, fn(g1, g2, g3) {
+///   LargeForm(g1.a, g1.b, g1.c, g2.a, g2.b, g2.c, g3.a, g3.b, g3.c)
+/// })
+/// ```
 pub fn map5(
   v1: Validation(a, e),
   v2: Validation(b, e),
@@ -129,11 +166,11 @@ pub fn map5(
   v5: Validation(g, e),
   f: fn(a, b, c, d, g) -> h,
 ) -> Validation(h, e) {
-  map2(
-    map4(v1, v2, v3, v4, fn(a, b, c, d) { fn(g) { f(a, b, c, d, g) } }),
-    v5,
-    fn(f_, g) { f_(g) },
-  )
+  {
+    use a, b, c, d <- map4(v1, v2, v3, v4)
+    f(a, b, c, d, _)
+  }
+  |> apply(v5)
 }
 
 // ==========================================
@@ -142,16 +179,44 @@ pub fn map5(
 
 /// Apply a validation containing a function to a validation containing a value.
 ///
+/// This is the core operation for applicative functors. It allows you to
+/// gradually build up multi-argument functions by applying validations one
+/// at a time. Combined with `use`, this enables elegant sequential validation
+/// that still accumulates all errors.
+///
+/// ## Rationale
+///
+/// While `map2` works for two validations, `apply` lets you handle arbitrary
+/// arities by currying: apply the first validation to get a function in a
+/// validation, then keep applying remaining validations. This is how `map3`
+/// through `map5` are implemented internally.
+///
 /// ## Examples
+///
+/// Apply a single-argument function:
 ///
 /// ```gleam
 /// apply(valid(fn(x) { x * 2 }), valid(21))
 /// // -> Valid(42)
 /// ```
 ///
+/// Errors from both sides accumulate:
+///
 /// ```gleam
 /// apply(invalid("e1"), invalid("e2"))
 /// // -> Invalid(["e1", "e2"])
+/// ```
+///
+/// Build up multi-argument validation incrementally:
+///
+/// ```gleam
+/// // Start with a curried function for creating a User
+/// let user_constructor = valid(fn(name) { fn(age) { User(name, age) } })
+///
+/// // Apply validations one by one, collecting all errors
+/// user_constructor
+/// |> apply(validate_name("Alice"))   // Valid(fn(age) { User("Alice", age) })
+/// |> apply(validate_age(30))         // Valid(User("Alice", 30))
 /// ```
 pub fn apply(
   vf: Validation(fn(a) -> b, e),
@@ -317,40 +382,40 @@ pub fn of_result_list(r: Result(a, List(e))) -> Validation(a, e) {
 // Validation Helpers
 // ==========================================
 
-/// Run a validation and return the value or a default.
+/// Unwrap a validation, returning the value or a default.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// default_to(valid(42), 0)
+/// unwrap(valid(42), 0)
 /// // -> 42
 /// ```
 ///
 /// ```gleam
-/// default_to(invalid("e"), 0)
+/// unwrap(invalid("e"), 0)
 /// // -> 0
 /// ```
-pub fn default_to(v: Validation(a, e), default: a) -> a {
+pub fn unwrap(v: Validation(a, e), default: a) -> a {
   case v {
     Valid(a) -> a
     Invalid(_) -> default
   }
 }
 
-/// Run a validation with a lazy default.
+/// Unwrap a validation with a lazy default.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// default_with(valid(42), fn() { 0 })
+/// unwrap_lazy(valid(42), fn() { 0 })
 /// // -> 42
 /// ```
 ///
 /// ```gleam
-/// default_with(invalid("e"), fn() { 0 })
+/// unwrap_lazy(invalid("e"), fn() { 0 })
 /// // -> 0
 /// ```
-pub fn default_with(v: Validation(a, e), f: fn() -> a) -> a {
+pub fn unwrap_lazy(v: Validation(a, e), f: fn() -> a) -> a {
   case v {
     Valid(a) -> a
     Invalid(_) -> f()

@@ -184,9 +184,9 @@ pub fn is_invalid_test() {
   rectify.invalid("e") |> rectify.is_invalid |> should.be_true
 }
 
-pub fn default_to_test() {
-  rectify.valid(42) |> rectify.default_to(0) |> should.equal(42)
-  rectify.invalid("e") |> rectify.default_to(0) |> should.equal(0)
+pub fn unwrap_test() {
+  rectify.valid(42) |> rectify.unwrap(0) |> should.equal(42)
+  rectify.invalid("e") |> rectify.unwrap(0) |> should.equal(0)
 }
 
 pub fn errors_test() {
@@ -318,13 +318,13 @@ pub fn of_result_list_test() {
 // More utilities
 // ==========================================
 
-pub fn default_with_test() {
+pub fn unwrap_lazy_test() {
   rectify.valid(42)
-  |> rectify.default_with(fn() { 0 })
+  |> rectify.unwrap_lazy(fn() { 0 })
   |> should.equal(42)
 
   rectify.invalid("e")
-  |> rectify.default_with(fn() { 0 })
+  |> rectify.unwrap_lazy(fn() { 0 })
   |> should.equal(0)
 }
 
