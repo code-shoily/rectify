@@ -145,7 +145,6 @@ ro.bind(Ok(Some(5)), fn(n) { ro.some(n * 2) })
 // Predicates
 ro.is_some(Ok(Some(42)))     // True
 ro.is_none(Ok(None))         // True
-ro.is_error(Error("e"))      // True
 
 // Conversions
 ro.to_option(Ok(Some(42)))        // Some(42)
@@ -153,6 +152,10 @@ ro.of_option(Some(42))            // Ok(Some(42))
 ro.of_result(Ok(42))              // Ok(Some(42))
 ro.to_result(Ok(Some(42)), 0)     // Ok(42)
 ro.to_result(Ok(None), 0)         // Ok(0) - default value
+
+// Defaults (unwrap Option inside Result)
+ro.unwrap_option(Ok(None), 0)           // Ok(0) - provide default for None
+ro.unwrap_option_lazy(Ok(None), fn() { expensive() })  // lazy default
 ```
 
 ## Common Patterns

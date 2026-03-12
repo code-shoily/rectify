@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2026-03-12
 
 ### Breaking
 
@@ -17,6 +17,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **rectify/option** - Renamed `default_with/2` to `unwrap_lazy/2`
   - Better conveys the lazy evaluation semantics and mirrors `unwrap` naming.
+
+- **rectify/result_option** - Removed `is_error/1`
+  - Use `gleam/result.is_error/1` instead (identical functionality).
+
+- **rectify/result_option** - Renamed `default_to/2` to `unwrap_option/2` and `default_with/2` to `unwrap_option_lazy/2`
+  - Names better describe the operation: unwrapping the Option inside the Result.
+
+- **rectify** (Validation) - Renamed `default_to/2` to `unwrap/2` and `default_with/2` to `unwrap_lazy/2`
+  - Consistent naming with `rectify/option` module. `unwrap` extracts the value or returns a default.
+
+### Changed
+
+- Improved documentation and examples throughout all modules
+  - Added rationale sections explaining design decisions (Miller's Law, cognitive ergonomics)
+  - Enhanced `apply` documentation with practical currying examples
+  - Added hierarchical composition examples for handling large field counts
+  - Better cross-references between related functions
 
 ## [1.0.0] - 2026-03-10
 
@@ -47,5 +64,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 55 test cases covering all functionality
 
-[Unreleased]: https://github.com/code-shoily/rectify/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/code-shoily/rectify/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/code-shoily/rectify/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/code-shoily/rectify/releases/tag/v1.0.0
