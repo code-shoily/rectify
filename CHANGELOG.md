@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking
+
+- **rectify/option** - Removed `is_some/1` and `is_none/1`
+  - These were duplicates of `gleam/option.is_some/1` and `gleam/option.is_none/1`, use those instead.
+
 ## [1.0.0] - 2026-03-10
 
 ### Added
