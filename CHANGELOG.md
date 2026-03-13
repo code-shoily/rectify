@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-03-13
+
 ### Added
 
 - **New conversion functions** in `rectify` module:
@@ -175,6 +177,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 55 test cases covering all functionality
 
-[Unreleased]: https://github.com/code-shoily/rectify/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/code-shoily/rectify/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/code-shoily/rectify/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/code-shoily/rectify/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/code-shoily/rectify/releases/tag/v1.0.0
