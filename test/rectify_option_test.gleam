@@ -1,3 +1,4 @@
+import gleam/int
 import gleam/option.{None, Some}
 import gleeunit
 import gleeunit/should
@@ -111,5 +112,99 @@ pub fn of_result_test() {
   |> should.equal(Some(42))
 
   ropt.of_result(Error("oops"))
+  |> should.equal(None)
+}
+
+// ==========================================
+// Zip
+// ==========================================
+
+pub fn zip_both_some_test() {
+  ropt.zip(Some(1), Some(2))
+  |> should.equal(Some(#(1, 2)))
+}
+
+pub fn zip_first_none_test() {
+  ropt.zip(None, Some(2))
+  |> should.equal(None)
+}
+
+pub fn zip_second_none_test() {
+  ropt.zip(Some(1), None)
+  |> should.equal(None)
+}
+
+pub fn zip_both_none_test() {
+  ropt.zip(None, None)
+  |> should.equal(None)
+}
+
+pub fn zip3_all_some_test() {
+  ropt.zip3(Some(1), Some(2), Some(3))
+  |> should.equal(Some(#(1, 2, 3)))
+}
+
+pub fn zip3_one_none_test() {
+  ropt.zip3(Some(1), None, Some(3))
+  |> should.equal(None)
+}
+
+// ==========================================
+// Traverse
+// ==========================================
+
+pub fn traverse_all_some_test() {
+  ropt.traverse([1, 2, 3], fn(x) { Some(x * 2) })
+  |> should.equal(Some([2, 4, 6]))
+}
+
+pub fn traverse_one_none_test() {
+  ropt.traverse([1, 2, 3], fn(x) {
+    case x == 2 {
+      True -> None
+      False -> Some(x)
+    }
+  })
+  |> should.equal(None)
+}
+
+pub fn traverse_empty_list_test() {
+  ropt.traverse([], fn(x) { Some(x) })
+  |> should.equal(Some([]))
+}
+
+pub fn traverse_with_int_parse_success_test() {
+  ["1", "2", "3"]
+  |> ropt.traverse(fn(s) { int.parse(s) |> ropt.of_result })
+  |> should.equal(Some([1, 2, 3]))
+}
+
+pub fn traverse_with_int_parse_failure_test() {
+  ["1", "bad", "3"]
+  |> ropt.traverse(fn(s) { int.parse(s) |> ropt.of_result })
+  |> should.equal(None)
+}
+
+// ==========================================
+// Sequence
+// ==========================================
+
+pub fn sequence_all_some_test() {
+  ropt.sequence([Some(1), Some(2), Some(3)])
+  |> should.equal(Some([1, 2, 3]))
+}
+
+pub fn sequence_one_none_test() {
+  ropt.sequence([Some(1), None, Some(3)])
+  |> should.equal(None)
+}
+
+pub fn sequence_empty_test() {
+  ropt.sequence([])
+  |> should.equal(Some([]))
+}
+
+pub fn sequence_all_none_test() {
+  ropt.sequence([None, None, None])
   |> should.equal(None)
 }

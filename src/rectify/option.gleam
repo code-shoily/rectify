@@ -134,6 +134,46 @@ pub fn map5(
   }
 }
 
+/// Combine two options into a tuple.
+/// This is syntactic sugar for `map2(opt1, opt2, fn(a, b) { #(a, b) })`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// zip(Some(1), Some(2))
+/// // -> Some(#(1, 2))
+/// ```
+///
+/// ```gleam
+/// zip(Some(1), None)
+/// // -> None
+/// ```
+pub fn zip(opt1: Option(a), opt2: Option(b)) -> Option(#(a, b)) {
+  map2(opt1, opt2, fn(a, b) { #(a, b) })
+}
+
+/// Combine three options into a tuple.
+/// This is syntactic sugar for `map3(opt1, opt2, opt3, fn(a, b, c) { #(a, b, c) })`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// zip3(Some(1), Some(2), Some(3))
+/// // -> Some(#(1, 2, 3))
+/// ```
+///
+/// ```gleam
+/// zip3(Some(1), None, Some(3))
+/// // -> None
+/// ```
+pub fn zip3(
+  opt1: Option(a),
+  opt2: Option(b),
+  opt3: Option(c),
+) -> Option(#(a, b, c)) {
+  map3(opt1, opt2, opt3, fn(a, b, c) { #(a, b, c) })
+}
+
 // ==========================================
 // Collections
 // ==========================================
@@ -169,6 +209,73 @@ pub fn first_some(opts: List(Option(a))) -> Option(a) {
     [Some(a), ..] -> Some(a)
     [None, ..rest] -> first_some(rest)
   }
+}
+
+/// Apply a function that returns an Option to each element of a list,
+/// collecting the results. If all results are Some, returns Some with the list
+/// of values. If any result is None, returns None.
+///
+/// This is useful for operations like "parse all these strings, fail if any
+/// parse fails" or "look up all these keys, fail if any key is missing".
+///
+/// ## Examples
+///
+/// ```gleam
+/// import gleam/int
+///
+/// traverse(["1", "2", "3"], int.parse)
+/// // -> Some([1, 2, 3])
+/// ```
+///
+/// ```gleam
+/// import gleam/int
+///
+/// traverse(["1", "bad", "3"], int.parse)
+/// // -> None
+/// ```
+///
+/// ```gleam
+/// import gleam/dict
+///
+/// let users = dict.from_list([#(1, "Alice"), #(2, "Bob")])
+/// traverse([1, 2], fn(id) { dict.get(users, id) })
+/// // -> Some(["Alice", "Bob"])
+/// ```
+pub fn traverse(items: List(a), f: fn(a) -> Option(b)) -> Option(List(b)) {
+  list.try_fold(items, [], fn(acc, item) {
+    case f(item) {
+      Some(value) -> Ok([value, ..acc])
+      None -> Error(Nil)
+    }
+  })
+  |> of_result
+  |> option.map(list.reverse)
+}
+
+/// Convert a list of Options into an Option of a list.
+/// If all options are Some, returns Some with the list of values.
+/// If any option is None, returns None.
+///
+/// This is the special case of `traverse` where the function is identity.
+///
+/// ## Examples
+///
+/// ```gleam
+/// sequence([Some(1), Some(2), Some(3)])
+/// // -> Some([1, 2, 3])
+/// ```
+///
+/// ```gleam
+/// sequence([Some(1), None, Some(3)])
+/// // -> None
+/// ```
+///
+/// ```gleam
+/// sequence([])
+/// // -> Some([])
+/// ```
+pub fn sequence(options: List(Option(a))) -> Option(List(a)) {
+  traverse(options, fn(x) { x })
 }
 
 // ==========================================

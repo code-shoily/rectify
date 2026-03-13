@@ -148,3 +148,132 @@ pub fn unwrap_option_lazy_test() {
   ro.unwrap_option_lazy(Error("e"), fn() { 0 })
   |> should.equal(Error("e"))
 }
+
+// ==========================================
+// Zip
+// ==========================================
+
+pub fn zip_both_some_test() {
+  ro.zip(Ok(Some(1)), Ok(Some(2)))
+  |> should.equal(Ok(Some(#(1, 2))))
+}
+
+pub fn zip_first_none_test() {
+  ro.zip(Ok(None), Ok(Some(2)))
+  |> should.equal(Ok(None))
+}
+
+pub fn zip_second_none_test() {
+  ro.zip(Ok(Some(1)), Ok(None))
+  |> should.equal(Ok(None))
+}
+
+pub fn zip_first_error_test() {
+  ro.zip(Error("e1"), Ok(Some(2)))
+  |> should.equal(Error("e1"))
+}
+
+pub fn zip_second_error_test() {
+  ro.zip(Ok(Some(1)), Error("e2"))
+  |> should.equal(Error("e2"))
+}
+
+pub fn zip_both_error_test() {
+  ro.zip(Error("e1"), Error("e2"))
+  |> should.equal(Error("e1"))
+}
+
+pub fn zip3_all_some_test() {
+  ro.zip3(Ok(Some(1)), Ok(Some(2)), Ok(Some(3)))
+  |> should.equal(Ok(Some(#(1, 2, 3))))
+}
+
+pub fn zip3_one_none_test() {
+  ro.zip3(Ok(Some(1)), Ok(None), Ok(Some(3)))
+  |> should.equal(Ok(None))
+}
+
+pub fn zip3_one_error_test() {
+  ro.zip3(Ok(Some(1)), Error("e"), Ok(Some(3)))
+  |> should.equal(Error("e"))
+}
+
+// ==========================================
+// Traverse
+// ==========================================
+
+pub fn traverse_all_some_test() {
+  ro.traverse([1, 2, 3], fn(x) { Ok(Some(x * 2)) })
+  |> should.equal(Ok(Some([2, 4, 6])))
+}
+
+pub fn traverse_one_none_test() {
+  ro.traverse([1, 2, 3], fn(x) {
+    case x == 2 {
+      True -> Ok(None)
+      False -> Ok(Some(x))
+    }
+  })
+  |> should.equal(Ok(None))
+}
+
+pub fn traverse_one_error_test() {
+  ro.traverse([1, 2, 3], fn(x) {
+    case x == 2 {
+      True -> Error("not found")
+      False -> Ok(Some(x))
+    }
+  })
+  |> should.equal(Error("not found"))
+}
+
+pub fn traverse_empty_list_test() {
+  ro.traverse([], fn(x) { Ok(Some(x)) })
+  |> should.equal(Ok(Some([])))
+}
+
+pub fn traverse_errors_before_nones_test() {
+  // Should fail fast on error, not check for None
+  ro.traverse([1, 2, 3], fn(x) {
+    case x {
+      1 -> Error("error")
+      2 -> Ok(None)
+      _ -> Ok(Some(x))
+    }
+  })
+  |> should.equal(Error("error"))
+}
+
+// ==========================================
+// Sequence
+// ==========================================
+
+pub fn sequence_all_some_test() {
+  ro.sequence([Ok(Some(1)), Ok(Some(2)), Ok(Some(3))])
+  |> should.equal(Ok(Some([1, 2, 3])))
+}
+
+pub fn sequence_one_none_test() {
+  ro.sequence([Ok(Some(1)), Ok(None), Ok(Some(3))])
+  |> should.equal(Ok(None))
+}
+
+pub fn sequence_one_error_test() {
+  ro.sequence([Ok(Some(1)), Error("e"), Ok(Some(3))])
+  |> should.equal(Error("e"))
+}
+
+pub fn sequence_empty_test() {
+  ro.sequence([])
+  |> should.equal(Ok(Some([])))
+}
+
+pub fn sequence_all_none_test() {
+  ro.sequence([Ok(None), Ok(None), Ok(None)])
+  |> should.equal(Ok(None))
+}
+
+pub fn sequence_all_error_test() {
+  ro.sequence([Error("e1"), Error("e2"), Error("e3")])
+  |> should.equal(Error("e1"))
+}
