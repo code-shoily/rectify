@@ -1,3 +1,4 @@
+import gleam/set
 import gleam/string
 import gleeunit
 import gleeunit/should
@@ -336,4 +337,45 @@ pub fn map_errors_test() {
   rectify.invalid_many(["a", "b"])
   |> rectify.map_errors(fn(e) { "Err: " <> e })
   |> should.equal(rectify.Invalid(["Err: a", "Err: b"]))
+}
+
+// ==========================================
+// of_bool conversions
+// ==========================================
+
+pub fn of_bool_true_test() {
+  rectify.of_bool(True, "success", "error")
+  |> should.equal(rectify.Valid("success"))
+}
+
+pub fn of_bool_false_test() {
+  rectify.of_bool(False, "success", "error")
+  |> should.equal(rectify.Invalid(["error"]))
+}
+
+pub fn of_bool_with_validation_test() {
+  // Example: validating an email contains @
+  "email@test.com"
+  |> string.contains("@")
+  |> rectify.of_bool("email@test.com", "Missing @")
+  |> should.equal(rectify.Valid("email@test.com"))
+}
+
+pub fn of_bool_lazy_true_test() {
+  rectify.of_bool_lazy(True, fn() { "success" }, fn() { "error" })
+  |> should.equal(rectify.Valid("success"))
+}
+
+pub fn of_bool_lazy_false_test() {
+  rectify.of_bool_lazy(False, fn() { "success" }, fn() { "error" })
+  |> should.equal(rectify.Invalid(["error"]))
+}
+
+pub fn of_bool_lazy_with_set_test() {
+  // Example using set membership validation
+  ["amb", "blu", "brn"]
+  |> set.from_list
+  |> set.contains("blu")
+  |> rectify.of_bool_lazy(fn() { "blu" }, fn() { "Invalid color" })
+  |> should.equal(rectify.Valid("blu"))
 }

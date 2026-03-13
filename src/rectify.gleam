@@ -317,6 +317,65 @@ pub fn is_invalid(v: Validation(a, e)) -> Bool {
 // ==========================================
 // Validation Conversions
 // ==========================================
+/// Convert a boolean into a Validation and provide success and failure values.
+///
+/// ## Examples
+///
+/// ```gleam
+/// of_bool(True, "success", "error")
+/// // -> Valid("success")
+/// ```
+///
+/// ```gleam
+/// of_bool(False, "success", "error")
+/// // -> Invalid(["error"])
+/// ```
+///
+/// ```gleam
+/// // Common pattern: pipe boolean check into validation
+/// string.contains("email@test.com", "@")
+/// |> of_bool("email@test.com", "Missing @")
+/// // -> Valid("email@test.com")
+/// ```
+pub fn of_bool(condition: Bool, on_true: a, on_false: e) -> Validation(a, e) {
+  case condition {
+    True -> valid(on_true)
+    False -> invalid(on_false)
+  }
+}
+
+/// Convert a boolean into a Validation and provide success and failure thunks.
+///
+/// Useful for lazily computing values or deferring expensive computations that
+/// may not be needed based on the condition.
+///
+/// ## Examples
+///
+/// ```gleam
+/// of_bool_lazy(True, fn() { "success" }, fn() { "error" })
+/// // -> Valid("success")
+/// ```
+///
+/// ```gleam
+/// of_bool_lazy(False, fn() { "success" }, fn() { "error" })
+/// // -> Invalid(["error"])
+/// ```
+///
+/// ```gleam
+/// // Only computes expensive_fetch() if condition is true
+/// some_check()
+/// |> of_bool_lazy(fn() { expensive_fetch() }, fn() { "Check failed" })
+/// ```
+pub fn of_bool_lazy(
+  condition: Bool,
+  on_true: fn() -> a,
+  on_false: fn() -> e,
+) -> Validation(a, e) {
+  case condition {
+    True -> valid(on_true())
+    False -> invalid(on_false())
+  }
+}
 
 /// Convert validation to Result (all errors as list).
 ///

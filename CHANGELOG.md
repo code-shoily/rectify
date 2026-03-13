@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **New conversion functions** in `rectify` module:
+  - `of_bool/3` - Convert a boolean to Validation with explicit success/error values
+    - `of_bool(True, value, error)` → `Valid(value)`
+    - `of_bool(False, value, error)` → `Invalid([error])`
+    - Useful for predicate-based validation: `string.contains(email, "@") |> of_bool(email, "Missing @")`
+
+  - `of_bool_lazy/3` - Lazy version for expensive computations
+    - Success and error values are computed only when needed
+    - Useful when values require computation or I/O
+
+- **Test coverage increased**: 127 tests total (up from 112)
+  - 6 new unit tests for `of_bool` and `of_bool_lazy` in `test/rectify_test.gleam`
+  - 9 new property-based tests verifying correctness, consistency, and equivalence
+    - True/False produce expected Valid/Invalid results
+    - Lazy and eager versions are equivalent
+    - Negation properly inverts results
+    - Integration with `is_valid`/`is_invalid` predicates
+
 - **Property-Based Testing & Validation Law Verification**:
   - **Comprehensive law tests** for Validation type in `test/validation_laws_test.gleam`
     - 26 new property-based tests using the `qcheck` library

@@ -401,3 +401,123 @@ pub fn large_error_accumulation_test() {
     _ -> panic as "Expected Invalid"
   }
 }
+
+// ==========================================
+// of_bool Properties
+// ==========================================
+
+/// Property: of_bool(True, a, e) always returns Valid(a)
+pub fn of_bool_true_always_valid_test() {
+  qcheck.given(qcheck.tuple2(int_generator(), string_generator()), fn(inputs) {
+    let #(a, e) = inputs
+    rectify.of_bool(True, a, e) |> should.equal(rectify.valid(a))
+  })
+}
+
+/// Property: of_bool(False, a, e) always returns Invalid([e])
+pub fn of_bool_false_always_invalid_test() {
+  qcheck.given(qcheck.tuple2(int_generator(), string_generator()), fn(inputs) {
+    let #(a, e) = inputs
+    rectify.of_bool(False, a, e) |> should.equal(rectify.invalid(e))
+  })
+}
+
+/// Property: of_bool is consistent with manual construction
+pub fn of_bool_consistency_test() {
+  qcheck.given(qcheck.tuple2(int_generator(), string_generator()), fn(inputs) {
+    let #(a, e) = inputs
+
+    // True case should equal valid()
+    rectify.of_bool(True, a, e) |> should.equal(rectify.valid(a))
+
+    // False case should equal invalid()
+    rectify.of_bool(False, a, e) |> should.equal(rectify.invalid(e))
+  })
+}
+
+/// Property: Negating condition swaps Valid/Invalid
+pub fn of_bool_negation_inverts_result_test() {
+  qcheck.given(qcheck.tuple2(int_generator(), string_generator()), fn(inputs) {
+    let #(a, e) = inputs
+    let condition = True
+
+    let result_true = rectify.of_bool(condition, a, e)
+    let result_false = rectify.of_bool(!condition, a, e)
+
+    case result_true, result_false {
+      rectify.Valid(_), rectify.Invalid(_) -> Nil
+      rectify.Invalid(_), rectify.Valid(_) -> Nil
+      _, _ -> panic as "Negation should swap Valid/Invalid"
+    }
+  })
+}
+
+/// Property: of_bool result can be checked with is_valid
+pub fn of_bool_is_valid_correspondence_test() {
+  qcheck.given(
+    qcheck.tuple3(qcheck.bool(), int_generator(), string_generator()),
+    fn(inputs) {
+      let #(condition, a, e) = inputs
+      let result = rectify.of_bool(condition, a, e)
+
+      case condition {
+        True -> rectify.is_valid(result) |> should.be_true
+        False -> rectify.is_invalid(result) |> should.be_true
+      }
+    },
+  )
+}
+
+// ==========================================
+// of_bool_lazy Properties
+// ==========================================
+
+/// Property: of_bool_lazy(True, on_true, on_false) always returns Valid
+pub fn of_bool_lazy_true_always_valid_test() {
+  qcheck.given(qcheck.tuple2(int_generator(), string_generator()), fn(inputs) {
+    let #(a, e) = inputs
+    rectify.of_bool_lazy(True, fn() { a }, fn() { e })
+    |> should.equal(rectify.valid(a))
+  })
+}
+
+/// Property: of_bool_lazy(False, on_true, on_false) always returns Invalid
+pub fn of_bool_lazy_false_always_invalid_test() {
+  qcheck.given(qcheck.tuple2(int_generator(), string_generator()), fn(inputs) {
+    let #(a, e) = inputs
+    rectify.of_bool_lazy(False, fn() { a }, fn() { e })
+    |> should.equal(rectify.invalid(e))
+  })
+}
+
+/// Property: of_bool_lazy is equivalent to of_bool for eager values
+pub fn of_bool_lazy_equivalence_test() {
+  qcheck.given(
+    qcheck.tuple3(qcheck.bool(), int_generator(), string_generator()),
+    fn(inputs) {
+      let #(condition, a, e) = inputs
+
+      let eager_result = rectify.of_bool(condition, a, e)
+      let lazy_result = rectify.of_bool_lazy(condition, fn() { a }, fn() { e })
+
+      lazy_result |> should.equal(eager_result)
+    },
+  )
+}
+
+/// Property: of_bool_lazy negation inverts result
+pub fn of_bool_lazy_negation_inverts_result_test() {
+  qcheck.given(qcheck.tuple2(int_generator(), string_generator()), fn(inputs) {
+    let #(a, e) = inputs
+    let condition = True
+
+    let result_true = rectify.of_bool_lazy(condition, fn() { a }, fn() { e })
+    let result_false = rectify.of_bool_lazy(!condition, fn() { a }, fn() { e })
+
+    case result_true, result_false {
+      rectify.Valid(_), rectify.Invalid(_) -> Nil
+      rectify.Invalid(_), rectify.Valid(_) -> Nil
+      _, _ -> panic as "Negation should swap Valid/Invalid"
+    }
+  })
+}
