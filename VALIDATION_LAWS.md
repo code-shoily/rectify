@@ -1,4 +1,4 @@
-# Validation Laws
+# Validation Laws (WIP)
 
 This document explains the mathematical laws that the `Validation` type satisfies, and why they matter for building reliable, predictable software.
 
@@ -27,6 +27,7 @@ map(v, fn(x) { x }) == v
 **What it means:** If you map a function that does nothing, you get back what you started with.
 
 **Example:**
+
 ```gleam
 let v = valid(42)
 map(v, fn(x) { x })  // -> valid(42)
@@ -43,6 +44,7 @@ map(map(v, f), g) == map(v, fn(x) { g(f(x)) })
 **What it means:** You can optimize by combining functions before mapping, or map twice - the result is the same.
 
 **Example:**
+
 ```gleam
 let v = valid(5)
 let double = fn(x) { x * 2 }
@@ -70,6 +72,7 @@ apply(valid(fn(x) { x }), v) == v
 **What it means:** If you apply a function that does nothing, the value is unchanged.
 
 **Example:**
+
 ```gleam
 let v = valid(42)
 apply(valid(fn(x) { x }), v)  // -> valid(42)
@@ -86,6 +89,7 @@ apply(valid(f), valid(x)) == valid(f(x))
 **What it means:** If both the function and value are valid, the result is just the function applied normally, wrapped in Valid.
 
 **Example:**
+
 ```gleam
 let f = fn(x) { x * 2 }
 apply(valid(f), valid(21))  // -> valid(42)
@@ -115,26 +119,24 @@ where compose = fn(f) { fn(g) { fn(x) { f(g(x)) } } }
 
 ---
 
-## Monad Laws (with caveats)
+## The Monad Dilemma (Why `bind` is special)
 
-The `Validation` type has a `bind` operation, but **it's not a lawful Monad for error accumulation**.
+The `Validation` type has a `bind` operation that perfectly satisfies the three standard Monad laws (Left Identity, Right Identity, and Associativity).
 
-### Why Not a Lawful Monad?
+However, in functional programming, types that are both Applicatives and Monads must satisfy the **Consistency Law**: `apply` and `bind` must result in the exact same behavior.
 
-Monads require **sequential computation** where the next step depends on the previous result. But if the first step fails, the second step never runs - so errors can't accumulate.
+For `Validation`, they deliberately disagree:
 
 ```gleam
-// With bind - only the first error is preserved
-bind(invalid("e1"), fn(_) { invalid("e2") })  // -> Invalid(["e1"])
-// The second validation never runs!
+let v1 = invalid(["e1"])
+let v2 = invalid(["e2"])
 
-// With map2 - both errors accumulate
-map2(invalid("e1"), invalid("e2"), fn(a, b) { a + b })  // -> Invalid(["e1", "e2"])
+// The Applicative way (map2/apply) evaluates in parallel and accumulates:
+map2(v1, v2, fn(a, b) { a + b })  // -> Invalid(["e1", "e2"])
+
+// The Monad way (bind) evaluates sequentially and short-circuits:
+bind(v1, fn(_) { v2 })            // -> Invalid(["e1"])
 ```
-
-### Monad Laws (that DO hold for Valid cases)
-
-Despite not being a full Monad, `bind` still satisfies the monad laws when values are Valid:
 
 #### Law 1: Left Identity
 
@@ -143,6 +145,7 @@ bind(valid(a), f) == f(a)
 ```
 
 **Example:**
+
 ```gleam
 bind(valid(5), fn(x) { valid(x * 2) })  // -> valid(10)
 fn(x) { valid(x * 2) }(5)               // -> valid(10)  (same!)
@@ -155,6 +158,7 @@ bind(v, valid) == v
 ```
 
 **Example:**
+
 ```gleam
 bind(valid(42), valid)  // -> valid(42)
 ```
@@ -166,6 +170,7 @@ bind(bind(v, f), g) == bind(v, fn(x) { bind(f(x), g) })
 ```
 
 **Example:**
+
 ```gleam
 let v = valid(5)
 let double = fn(x) { valid(x * 2) }
@@ -282,6 +287,7 @@ let v = map(data, fn(x) { validate(parse(x)) })
 ### 4. Tooling & Optimization
 
 When a type follows laws, compilers and tools can:
+
 - Perform safe optimizations (fusion, deforestation)
 - Generate correct code transformations
 - Provide better error messages
@@ -294,14 +300,16 @@ When a type follows laws, compilers and tools can:
 All these laws are verified in `test/validation_laws_test.gleam` using **property-based testing** with the `qcheck` library. The tests run hundreds of random inputs to ensure the laws hold in all cases.
 
 **Test Coverage:**
+
 - ✅ 2 Functor laws
 - ✅ 4 Applicative functor laws
-- ✅ 3 Monad laws (for Valid cases)
+- ✅ 3 Monad laws (bind satisfies these, but see caveat above)
 - ✅ 6 Error accumulation properties
 - ✅ 6 Conversion and utility properties
-- ✅ 3 Edge case tests
+- ✅ 9 of_bool properties (correctness, consistency, equivalence)
+- ✅ 5 Edge case tests
 
-**Total: 26 property-based law tests** + original 51 unit tests = **77 tests**
+**Total: 35 property-based law tests** + 92 unit tests = **127 tests**
 
 ---
 
