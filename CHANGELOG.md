@@ -5,6 +5,99 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Property-Based Testing & Validation Law Verification**:
+  - **Comprehensive law tests** for Validation type in `test/validation_laws_test.gleam`
+    - 26 new property-based tests using the `qcheck` library
+    - Total test suite now at 77 tests (up from 51)
+
+  - **Functor laws** verified with property-based testing:
+    - **Identity Law**: `map(v, fn(x) { x }) == v` - Mapping with identity doesn't change the value
+    - **Composition Law**: `map(map(v, f), g) == map(v, fn(x) { g(f(x)) })` - Mapping twice equals mapping once with composed function
+
+  - **Applicative functor laws** verified:
+    - **Identity Law**: `apply(valid(fn(x) { x }), v) == v` - Applying identity function preserves value
+    - **Homomorphism Law**: `apply(valid(f), valid(x)) == valid(f(x))` - Pure function application
+    - **Interchange Law**: `apply(vf, valid(y)) == apply(valid(fn(f) { f(y) }), vf)` - Order independence for pure values
+    - **Composition Law**: Function composition respects validation structure
+
+  - **Monad laws** verified (for Valid cases):
+    - **Left Identity**: `bind(valid(a), f) == f(a)` - Binding with pure value
+    - **Right Identity**: `bind(v, valid) == v` - Binding with pure constructor
+    - **Associativity**: `bind(bind(v, f), g) == bind(v, fn(x) { bind(f(x), g) })` - Nested binds can be reordered
+
+  - **Error accumulation properties** verified:
+    - All map2/map3/map4/map5 operations correctly accumulate errors from all Invalid validations
+    - Valid values are properly ignored when errors exist
+    - Mixed Valid/Invalid cases only preserve errors
+
+  - **Conversion and utility properties** verified:
+    - Round-trip conversions between Validation and Result
+    - Flatten operation correctness for nested validations
+    - Predicates (is_valid/is_invalid) are proper complements
+    - unwrap and errors functions behave correctly
+    - map_errors transforms all errors in a validation
+
+  - **Edge case tests**:
+    - Empty error lists
+    - Large error accumulation (100+ errors)
+    - Mixed valid/invalid combinations
+
+  - **Documentation**: `VALIDATION_LAWS.md` - Comprehensive guide explaining all laws, why they matter, and examples of each
+
+  - **Property-based testing infrastructure**:
+    - Uses `qcheck` library for generating hundreds of random test cases per law
+    - Custom generators for Validation, Int, String, and function types
+    - Verifies laws hold across diverse input spaces, not just hand-picked examples
+
+- **New Option utilities** in `rectify/option` module:
+  - **`zip/2` and `zip3/3`** - Combine multiple Options into tuples
+    - `zip(Some(1), Some(2))` returns `Some(#(1, 2))`
+    - Syntactic sugar for `map2`/`map3` with tuple constructors
+    - Useful for combining dictionary lookups or parsed values
+
+  - **`traverse/2`** - Apply a function returning Option to a list, collecting results
+    - `traverse(["1", "2"], int.parse)` returns `Some([1, 2])` if all parse successfully
+    - Returns `None` if any application returns `None`
+    - Common pattern: "Do X for all items, fail if any fail"
+    - Examples: parse all strings, look up all keys, validate all items
+
+  - **`sequence/1`** - Convert `List(Option(a))` to `Option(List(a))`
+    - `sequence([Some(1), Some(2)])` returns `Some([1, 2])`
+    - Returns `None` if any option in the list is `None`
+    - Special case of `traverse` where function is identity
+
+- **Test coverage increased**: 92 tests total (up from 77)
+  - 15 new tests for zip, traverse, and sequence operations in `rectify/option`
+  - Edge cases covered: empty lists, all None, mixed Some/None
+
+- **New Result(Option) utilities** in `rectify/result_option` module:
+  - **`zip/2` and `zip3/3`** - Combine multiple Result(Option)s into tuples
+    - `zip(Ok(Some(1)), Ok(Some(2)))` returns `Ok(Some(#(1, 2)))`
+    - Returns `Error` if any is `Error` (fail fast)
+    - Returns `Ok(None)` if any is `Ok(None)`
+    - Useful for combining database lookups or API calls
+
+  - **`traverse/2`** - Apply a function returning Result(Option) to a list, collecting results
+    - `traverse([1, 2, 3], find_user)` processes all IDs
+    - Returns `Error` if any operation fails (fail fast on errors)
+    - Returns `Ok(None)` if all succeed but any return `Ok(None)`
+    - Returns `Ok(Some([values]))` if all succeed and return `Some`
+    - Perfect for batch database lookups: "find all users, fail on DB error, None if any missing"
+
+  - **`sequence/1`** - Convert `List(Result(Option(a), e))` to `Result(Option(List(a)), e)`
+    - `sequence([Ok(Some(1)), Ok(Some(2))])` returns `Ok(Some([1, 2]))`
+    - Returns `Error` if any item is `Error`
+    - Returns `Ok(None)` if any item is `Ok(None)`
+    - Special case of `traverse` where function is identity
+
+- **Test coverage increased**: 112 tests total (up from 92)
+  - 20 new tests for Result(Option) zip, traverse, and sequence operations
+  - Edge cases covered: empty lists, errors before nones (fail fast), all error/none combinations
+
 ## [1.1.0] - 2026-03-12
 
 ### Breaking

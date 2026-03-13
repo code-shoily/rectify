@@ -116,10 +116,14 @@ ropt.unwrap_lazy(None, fn() { expensive() })  // Lazily compute default
 // Combining
 ropt.map2(Some(2), Some(3), fn(a, b) { a + b })  // Some(5)
 ropt.map3(opt1, opt2, opt3, fn(a, b, c) { a + b + c })  // Up to map5 available
+ropt.zip(Some(1), Some(2))                       // Some(#(1, 2))
+ropt.zip3(Some(1), Some(2), Some(3))             // Some(#(1, 2, 3))
 
 // Collections
-ropt.choose_somes([Some(1), None, Some(2)])  // [1, 2]
-ropt.first_some([None, Some(2), Some(3)])    // Some(2)
+ropt.choose_somes([Some(1), None, Some(2)])      // [1, 2]
+ropt.first_some([None, Some(2), Some(3)])        // Some(2)
+ropt.traverse(["1", "2", "3"], int.parse)        // Some([1, 2, 3])
+ropt.sequence([Some(1), Some(2), Some(3)])       // Some([1, 2, 3])
 
 // Conversions
 ropt.to_result(Some(42), "not found")  // Ok(42)
@@ -141,6 +145,14 @@ ro.error("e")      // Error("e")
 // Mapping
 ro.map(Ok(Some(5)), fn(n) { n * 2 })     // Ok(Some(10))
 ro.bind(Ok(Some(5)), fn(n) { ro.some(n * 2) })
+
+// Combining
+ro.zip(Ok(Some(1)), Ok(Some(2)))         // Ok(Some(#(1, 2)))
+ro.zip3(ro1, ro2, ro3)                   // Ok(Some(#(a, b, c))) or Ok(None) or Error
+
+// Collections
+ro.traverse([1, 2, 3], find_user)        // Ok(Some([users])) or Ok(None) or Error
+ro.sequence([ro1, ro2, ro3])             // Ok(Some([values])) or Ok(None) or Error
 
 // Predicates
 ro.is_some(Ok(Some(42)))     // True
@@ -207,6 +219,37 @@ ropt.first_some([
   dict.get(config, "fallback_url"),
   Some("default"),
 ])
+
+// Combine lookups into a tuple
+ropt.zip(
+  dict.get(config, "host"),
+  dict.get(config, "port"),
+)
+// -> Some(#("localhost", "8080"))
+```
+
+### Option Traverse
+
+```gleam
+import rectify/option as ropt
+import gleam/int
+
+// Parse all strings - fails if any parse fails
+ropt.traverse(["1", "2", "3"], int.parse)
+// -> Some([1, 2, 3])
+
+ropt.traverse(["1", "bad", "3"], int.parse)
+// -> None
+
+// Look up multiple keys
+let user_ids = [1, 2, 3]
+let users = dict.from_list([...])
+ropt.traverse(user_ids, fn(id) { dict.get(users, id) })
+// -> Some([user1, user2, user3])  (or None if any missing)
+
+// Flip a list of Options
+ropt.sequence([Some(1), Some(2), Some(3)])
+// -> Some([1, 2, 3])
 ```
 
 ### Result<Option> Pipeline
@@ -231,6 +274,36 @@ find_user(42)
 |> ro.to_result("unknown")  // Get Result(String, String)
 ```
 
+### Result<Option> Traverse
+
+```gleam
+import rectify/result_option as ro
+
+// Database lookup that can error or return None
+fn find_user(id: Int) -> Result(Option(User), DbError) { ... }
+
+// Look up multiple users - fails fast on error, returns None if any not found
+ro.traverse([1, 2, 3], find_user)
+// -> Error(db_error) if any query fails
+// -> Ok(None) if any user not found
+// -> Ok(Some([user1, user2, user3])) if all found
+
+// Combine multiple lookups
+ro.zip3(
+  find_user(1),
+  find_address(1),
+  find_preferences(1),
+)
+// -> Ok(Some(#(user, address, prefs))) if all found
+// -> Ok(None) if any not found
+// -> Error(db_error) if any query fails
+
+// Flip a list of Result(Option)
+let lookups = [find_user(1), find_user(2), find_user(3)]
+ro.sequence(lookups)
+// -> Ok(Some([users])) or Ok(None) or Error(db_error)
+```
+
 ## Comparison with Gleam's Result
 
 ```gleam
@@ -253,6 +326,24 @@ let v3 = rectify.invalid("error 2")
 rectify.map3(v1, v2, v3, fn(a, b, c) { a + b + c })
 // Invalid(["error 1", "error 2"])
 ```
+
+## Mathematical Soundness
+
+Rectify's `Validation` type is a **lawful Applicative Functor**, verified through comprehensive property-based testing:
+
+- ✅ **Functor Laws** - Identity and Composition
+- ✅ **Applicative Laws** - Identity, Homomorphism, Interchange, and Composition
+- ✅ **Monad Laws** - Left/Right Identity and Associativity (for Valid cases)
+- ✅ **Error Accumulation Properties** - Verified for map2 through map5
+- ✅ **112 tests total** - 26 property-based law tests + 86 unit tests
+
+These laws guarantee:
+- **Predictability** - Code behaves consistently regardless of structure
+- **Composability** - Small pieces combine correctly into larger pieces
+- **Refactorability** - Safe transformations without changing behavior
+- **Optimization** - Compilers can safely optimize your code
+
+See [VALIDATION_LAWS.md](VALIDATION_LAWS.md) for detailed explanations of each law and why they matter.
 
 ## Development
 
